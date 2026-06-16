@@ -10,6 +10,10 @@ import { ObtenerMediaUseCase } from './application/usecases/obtener-media.usecas
 import { BorrarMediaUseCase } from './application/usecases/borrar-media.usecase';
 import { ListarMediaUseCase } from './application/usecases/listar-media.usecase';
 import { MediaController } from './infrastructure/adapters/input/http/media.controller';
+// 🎥 Módulo de Streaming
+import { ListarVideosUseCase } from './application/usecases/listar-videos.usecase';
+import { StreamVideoUseCase } from './application/usecases/stream-video.usecase';
+import { StreamingController } from './infrastructure/adapters/input/http/streaming.controller';
 
 const app = express();
 
@@ -30,13 +34,19 @@ const borrarMediaUseCase = new BorrarMediaUseCase(mediaRepository, storageReposi
 const listarMediaUseCase = new ListarMediaUseCase(mediaRepository);
 
 const mediaController = new MediaController(
-  subirMediaUseCase, 
-  consultarMediaUseCase, 
+  subirMediaUseCase,
+  consultarMediaUseCase,
   obtenerMediaUseCase,
   borrarMediaUseCase,
   listarMediaUseCase,
   storageRepository
 );
+
+// 🎥 Módulo de Streaming
+// Use cases de Streaming
+const listarVideosUseCase = new ListarVideosUseCase(mediaRepository);
+const streamVideoUseCase = new StreamVideoUseCase(mediaRepository, storageRepository);
+const streamingController = new StreamingController(listarVideosUseCase, streamVideoUseCase);
 
 // 3. RUTAS (Ordenadas para evitar conflictos)
 app.get('/api/media', (req, res) => mediaController.listar(req, res));
@@ -47,6 +57,12 @@ app.get('/api/media/thumb/:id', (req, res) => mediaController.thumbnail(req, res
 app.get('/api/media/:id/download', (req, res) => mediaController.descargar(req, res));
 app.get('/api/media/:id', (req, res) => mediaController.consultar(req, res));
 app.delete('/api/media/:id', (req, res) => mediaController.borrar(req, res));
+
+// 🎥 Módulo de Streaming
+// Rutas del módulo de Streaming
+app.get('/api/streaming', (req, res) => streamingController.listar(req, res));
+app.get('/api/streaming/:id/info', (req, res) => streamingController.info(req, res));
+app.get('/api/streaming/:id', (req, res) => streamingController.stream(req, res));
 
 // 🚀 Inicialización
 app.listen(3000, async () => {
